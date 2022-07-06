@@ -5,23 +5,23 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"github.com/go-redis/redis/v9"
+	"github.com/go-redis/redis/v8"
 )
 
 const  (
 	ErrNotFound = "url not found"
-	TokenLength = 8
+	TokenLength = 3
 )
 
 type urlShortener struct {
 	redisClient redis.Client
 }
 
-func newUrlShortener(redisClient redis.Client) *urlShortener {
+func NewUrlShortener(redisClient redis.Client) *urlShortener {
 	return &urlShortener{redisClient: redisClient}
 }
 
-func (s *urlShortener) getUrl(token string) (string, error) {
+func (s *urlShortener) GetUrl(token string) (string, error) {
 	url, err := s.redisClient.Get(context.Background(), token).Result()
 	if err == redis.Nil {
 		return "", errors.New(ErrNotFound)
@@ -31,7 +31,7 @@ func (s *urlShortener) getUrl(token string) (string, error) {
 	return url, nil
 }
 
-func (s *urlShortener) saveUrl(url string) (string, error) {
+func (s *urlShortener) SetUrl(url string) (string, error) {
 	var token string
 	for {
 		token = generateToken()
