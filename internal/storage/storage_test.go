@@ -38,6 +38,10 @@ func (s *StorageSuite) TearDownSuite() {
 	sqlDB.Close()
 }
 
+func (s *StorageSuite) TearDownTest() {
+	s.db.Exec("DELETE FROM records")
+}
+
 func (s *StorageSuite) TestAddUrl() {
 	err := s.impl.AddUrl("abc123", "http://example.com")
 	s.Nil(err)
@@ -49,6 +53,14 @@ func (s *StorageSuite) TestAddUrl() {
 	s.Equal("abc123", rec.Token)
 }
 
+func (s *StorageSuite) TestAddUrl_DuplicateToken() {
+	err := s.impl.AddUrl("abc123", "http://example.com")
+	s.Nil(err)
+
+	err = s.impl.AddUrl("abc123", "http://example2.com")
+	s.Error(err)
+}
+gi
 func (s *StorageSuite) TestGetUrl() {
 	err := s.db.Create(&storage.Record{
 		Token: "abc123",
