@@ -60,7 +60,7 @@ func (s *StorageSuite) TestAddUrl_DuplicateToken() {
 	err = s.impl.AddUrl("abc123", "http://example2.com")
 	s.Error(err)
 }
-gi
+
 func (s *StorageSuite) TestGetUrl() {
 	err := s.db.Create(&storage.Record{
 		Token: "abc123",
