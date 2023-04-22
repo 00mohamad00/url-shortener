@@ -7,23 +7,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HttpServer struct {
-	service urlshortener.Service
+type HttpServer interface {
+	Run(addr string) error
+}
+
+type Impl struct {
 	router  *gin.Engine
+	service urlshortener.Service
 }
 
-func NewRouter(service urlshortener.Service) *gin.Engine {
-	router := gin.Default()
+func NewRouter(service urlshortener.Service) HttpServer {
+	server := &Impl{
+		router:  gin.Default(),
+		service: service,
+	}
 
-	router.GET("/:shortURL", shortener.Redirect)
-	router.POST("/shorten", shortener.CreateShortURL)
+	server.router.GET("/:shortURL", server.Redirect)
+	server.router.POST("/shorten", server.CreateShortURL)
 
-	return router
+	return server
 }
 
-func (s *HttpServer) Redirect(c *gin.Context) {
+func (i *Impl) Run(addr string) error {
+	return i.router.Run(addr)
+}
+
+func (i *Impl) Redirect(c *gin.Context) {
 	token := c.Param("token")
-	targetURL, err := s.service.GetUrl(token)
+	targetURL, err := i.service.GetUrl(token)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Token not found"})
 		return
@@ -31,7 +42,7 @@ func (s *HttpServer) Redirect(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, targetURL)
 }
 
-func (s *HttpServer) CreateShortURL(c *gin.Context) {
+func (i *Impl) CreateShortURL(c *gin.Context) {
 	var form struct {
 		TargetURL string `form:"target_url" binding:"required"`
 	}
@@ -39,7 +50,7 @@ func (s *HttpServer) CreateShortURL(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	token, err := s.service.AddUrl(form.TargetURL)
+	token, err := i.service.AddUrl(form.TargetURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
