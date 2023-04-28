@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/00mohamad00/url-shortener/pkg/storage"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -12,6 +13,10 @@ type Impl struct {
 }
 
 func NewStorage(db *gorm.DB) storage.Storage {
+	err := db.AutoMigrate(&storage.Record{})
+	if err != nil {
+		logrus.Fatalf("Failed to migrate db: %v\n", err)
+	}
 	return &Impl{db: db}
 }
 

@@ -11,30 +11,20 @@ import (
 
 type StorageSuite struct {
 	suite.Suite
-	db   *gorm.DB
-	impl *Impl
+	db      *gorm.DB
+	Storage storage.Storage
 }
 
 func (s *StorageSuite) SetupSuite() {
 	var err error
 	s.db, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		s.T().Fatalf("Failed to connect to database: %v", err)
-	}
-
-	err = s.db.AutoMigrate(&storage.Record{})
-	if err != nil {
-		s.T().Fatalf("Failed to migrate database schema: %v", err)
-	}
-
-	s.impl = &Impl{db: s.db}
+	s.Nil(err)
+	s.Storage = NewStorage(s.db)
 }
 
 func (s *StorageSuite) TearDownSuite() {
 	sqlDB, err := s.db.DB()
-	if err != nil {
-		s.T().Errorf("Failed to get database connection: %v", err)
-	}
+	s.Nil(err)
 	sqlDB.Close()
 }
 
@@ -43,7 +33,7 @@ func (s *StorageSuite) TearDownTest() {
 }
 
 func (s *StorageSuite) TestAddUrl() {
-	err := s.impl.AddUrl("abc123", "http://example.com")
+	err := s.Storage.AddUrl("abc123", "http://example.com")
 	s.Nil(err)
 
 	var rec storage.Record
@@ -54,10 +44,10 @@ func (s *StorageSuite) TestAddUrl() {
 }
 
 func (s *StorageSuite) TestAddUrl_DuplicateToken() {
-	err := s.impl.AddUrl("abc123", "http://example.com")
+	err := s.Storage.AddUrl("abc123", "http://example.com")
 	s.Nil(err)
 
-	err = s.impl.AddUrl("abc123", "http://example2.com")
+	err = s.Storage.AddUrl("abc123", "http://example2.com")
 	s.Error(err)
 }
 
@@ -68,13 +58,13 @@ func (s *StorageSuite) TestGetUrl() {
 	}).Error
 	s.Nil(err)
 
-	url, err := s.impl.GetUrl("abc123")
+	url, err := s.Storage.GetUrl("abc123")
 	s.Nil(err)
 	s.Equal("http://example.com", url)
 }
 
 func (s *StorageSuite) TestGetUrl_NotFound() {
-	_, err := s.impl.GetUrl("nonexistent")
+	_, err := s.Storage.GetUrl("nonexistent")
 	s.Equal(storage.ErrNotFound, err)
 }
 
