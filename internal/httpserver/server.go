@@ -22,7 +22,7 @@ func NewRouter(service urlshortener.Service) HttpServer {
 		service: service,
 	}
 
-	server.router.GET("/:shortURL", server.Redirect)
+	server.router.GET("/:token", server.Redirect)
 	server.router.POST("/shorten", server.CreateShortURL)
 
 	return server

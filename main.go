@@ -1,30 +1,24 @@
 package main
 
 import (
-	"fmt"
+	"github.com/00mohamad00/url-shortener/internal/httpserver"
 	"github.com/00mohamad00/url-shortener/internal/service"
-	"github.com/go-redis/redis/v8"
+	"github.com/00mohamad00/url-shortener/internal/storage"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func main() {
-	redisClient := *redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	urlShrotenerService := service.NewUrlShortener(redisClient)
-	token, err := urlShrotenerService.SetUrl("google.com")
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
-		fmt.Print("We have error!!!")
-		return
+		panic(err)
 	}
-	fmt.Printf("Token for google.com is %s \n", token)
 
-	url, err := urlShrotenerService.GetUrl(token)
+	urlShortenerService := service.NewUrlShortenerService(storage.NewStorage(db))
+	router := httpserver.NewRouter(urlShortenerService)
+
+	err = router.Run("127.0.0.1:8887")
 	if err != nil {
-		fmt.Print("We have error!!!")
-		return
+		panic(err)
 	}
-	fmt.Printf("Url of token %s is %s \n", token, url)
 }

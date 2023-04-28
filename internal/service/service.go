@@ -1,49 +1,42 @@
 package service
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
-	"github.com/go-redis/redis/v8"
+
+	"github.com/00mohamad00/url-shortener/pkg/storage"
+	"github.com/00mohamad00/url-shortener/pkg/urlshortener"
 )
 
-const  (
-	ErrNotFound = "url not found"
-	TokenLength = 3
+const (
+	TokenLength = 2
 )
 
-type urlShortener struct {
-	redisClient redis.Client
+type urlShortenerService struct {
+	storage storage.Storage
 }
 
-func NewUrlShortener(redisClient redis.Client) *urlShortener {
-	return &urlShortener{redisClient: redisClient}
+func NewUrlShortenerService(storage storage.Storage) urlshortener.Service {
+	return &urlShortenerService{storage: storage}
 }
 
-func (s *urlShortener) GetUrl(token string) (string, error) {
-	url, err := s.redisClient.Get(context.Background(), token).Result()
-	if err == redis.Nil {
-		return "", errors.New(ErrNotFound)
-	} else if err != nil {
-		return "", err
-	}
-	return url, nil
+func (s *urlShortenerService) GetUrl(token string) (string, error) {
+	return s.storage.GetUrl(token)
 }
 
-func (s *urlShortener) SetUrl(url string) (string, error) {
+func (s *urlShortenerService) AddUrl(url string) (string, error) {
 	var token string
 	for {
 		token = generateToken()
-		_, err := s.redisClient.Get(context.Background(), token).Result()
-		if err == redis.Nil {
+		_, err := s.storage.GetUrl(token)
+		if err == storage.ErrNotFound {
 			break
 		}
 		if err != nil {
 			return "", err
 		}
 	}
-	err := s.redisClient.Set(context.Background(), token, url, 0).Err()
+	err := s.storage.AddUrl(token, url)
 	if err != nil {
 		return "", err
 	}
