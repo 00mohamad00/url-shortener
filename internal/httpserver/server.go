@@ -7,6 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Config struct {
+	Addr string
+}
+
 type HttpServer interface {
 	Run(addr string) error
 }
